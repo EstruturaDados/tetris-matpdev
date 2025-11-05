@@ -1,56 +1,162 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
-// Desafio Tetris Stack
-// Tema 3 - Integração de Fila e Pilha
-// Este código inicial serve como base para o desenvolvimento do sistema de controle de peças.
-// Use as instruções de cada nível para desenvolver o desafio.
+#define CAPACIDADE_FILA 5
 
-int main() {
+typedef struct
+{
+    char nome;
+    int id;
+} Peca;
 
-    // 🧩 Nível Novato: Fila de Peças Futuras
-    //
-    // - Crie uma struct Peca com os campos: tipo (char) e id (int).
-    // - Implemente uma fila circular com capacidade para 5 peças.
-    // - Crie funções como inicializarFila(), enqueue(), dequeue(), filaCheia(), filaVazia().
-    // - Cada peça deve ser gerada automaticamente com um tipo aleatório e id sequencial.
-    // - Exiba a fila após cada ação com uma função mostrarFila().
-    // - Use um menu com opções como:
-    //      1 - Jogar peça (remover da frente)
-    //      0 - Sair
-    // - A cada remoção, insira uma nova peça ao final da fila.
+typedef struct
+{
+    Peca pecas[CAPACIDADE_FILA];
+    int frente;
+    int tras;
+    int tamanho;
+} FilaPecas;
 
+int proximoId = 0;
 
+void inicializarFila(FilaPecas *fila)
+{
+    fila->frente = 0;
+    fila->tras = -1;
+    fila->tamanho = 0;
+}
 
-    // 🧠 Nível Aventureiro: Adição da Pilha de Reserva
-    //
-    // - Implemente uma pilha linear com capacidade para 3 peças.
-    // - Crie funções como inicializarPilha(), push(), pop(), pilhaCheia(), pilhaVazia().
-    // - Permita enviar uma peça da fila para a pilha (reserva).
-    // - Crie um menu com opção:
-    //      2 - Enviar peça da fila para a reserva (pilha)
-    //      3 - Usar peça da reserva (remover do topo da pilha)
-    // - Exiba a pilha junto com a fila após cada ação com mostrarPilha().
-    // - Mantenha a fila sempre com 5 peças (repondo com gerarPeca()).
+int filaVazia(FilaPecas *fila)
+{
+    return fila->tamanho == 0;
+}
 
+int filaCheia(FilaPecas *fila)
+{
+    return fila->tamanho == CAPACIDADE_FILA;
+}
 
-    // 🔄 Nível Mestre: Integração Estratégica entre Fila e Pilha
-    //
-    // - Implemente interações avançadas entre as estruturas:
-    //      4 - Trocar a peça da frente da fila com o topo da pilha
-    //      5 - Trocar os 3 primeiros da fila com as 3 peças da pilha
-    // - Para a opção 4:
-    //      Verifique se a fila não está vazia e a pilha tem ao menos 1 peça.
-    //      Troque os elementos diretamente nos arrays.
-    // - Para a opção 5:
-    //      Verifique se a pilha tem exatamente 3 peças e a fila ao menos 3.
-    //      Use a lógica de índice circular para acessar os primeiros da fila.
-    // - Sempre valide as condições antes da troca e informe mensagens claras ao usuário.
-    // - Use funções auxiliares, se quiser, para modularizar a lógica de troca.
-    // - O menu deve ficar assim:
-    //      4 - Trocar peça da frente com topo da pilha
-    //      5 - Trocar 3 primeiros da fila com os 3 da pilha
+Peca gerarPeca()
+{
+    Peca novaPeca;
+    char tipos[] = {'I', 'O', 'T', 'L'};
+    novaPeca.nome = tipos[rand() % 4];
+    novaPeca.id = proximoId++;
+    return novaPeca;
+}
 
+int enqueue(FilaPecas *fila, Peca peca)
+{
+    if (filaCheia(fila))
+    {
+        return 0;
+    }
+
+    fila->tras = (fila->tras + 1) % CAPACIDADE_FILA;
+    fila->pecas[fila->tras] = peca;
+    fila->tamanho++;
+    return 1;
+}
+
+int dequeue(FilaPecas *fila, Peca *pecaRemovida)
+{
+    if (filaVazia(fila))
+    {
+        return 0;
+    }
+
+    *pecaRemovida = fila->pecas[fila->frente];
+    fila->frente = (fila->frente + 1) % CAPACIDADE_FILA;
+    fila->tamanho--;
+    return 1;
+}
+
+void mostrarFila(FilaPecas *fila)
+{
+    printf("\nFila de pecas\n");
+
+    if (filaVazia(fila))
+    {
+        printf("[Vazia]\n");
+        return;
+    }
+
+    int i;
+    int indice = fila->frente;
+    for (i = 0; i < fila->tamanho; i++)
+    {
+        printf("[%c %d] ", fila->pecas[indice].nome, fila->pecas[indice].id);
+        indice = (indice + 1) % CAPACIDADE_FILA;
+    }
+    printf("\n");
+}
+
+void mostrarMenu()
+{
+    printf("\n=== TETRIS STACK ===\n");
+    printf("1 - Jogar peca (dequeue)\n");
+    printf("2 - Inserir nova peca (enqueue)\n");
+    printf("0 - Sair\n");
+    printf("Escolha uma opcao: ");
+}
+
+int main()
+{
+    FilaPecas fila;
+    int opcao;
+    Peca pecaRemovida;
+
+    srand(time(NULL));
+
+    inicializarFila(&fila);
+
+    for (int i = 0; i < CAPACIDADE_FILA; i++)
+    {
+        enqueue(&fila, gerarPeca());
+    }
+
+    do
+    {
+        mostrarFila(&fila);
+        mostrarMenu();
+        scanf("%d", &opcao);
+
+        switch (opcao)
+        {
+        case 1:
+            if (dequeue(&fila, &pecaRemovida))
+            {
+                printf("\nPeca jogada: [%c %d]\n", pecaRemovida.nome, pecaRemovida.id);
+                enqueue(&fila, gerarPeca());
+                printf("Nova peca adicionada automaticamente.\n");
+            }
+            else
+            {
+                printf("\nErro: Fila vazia!\n");
+            }
+            break;
+
+        case 2:
+            if (enqueue(&fila, gerarPeca()))
+            {
+                printf("\nNova peca inserida com sucesso!\n");
+            }
+            else
+            {
+                printf("\nErro: Fila cheia!\n");
+            }
+            break;
+
+        case 0:
+            printf("\nEncerrando o jogo. Ate logo!\n");
+            break;
+
+        default:
+            printf("\nOpcao invalida! Tente novamente.\n");
+        }
+
+    } while (opcao != 0);
 
     return 0;
 }
-
